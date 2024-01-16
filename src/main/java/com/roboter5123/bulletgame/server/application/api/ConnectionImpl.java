@@ -1,4 +1,6 @@
 package com.roboter5123.bulletgame.server.application.api;
+import com.roboter5123.bulletgame.server.application.exception.SocketException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -9,8 +11,8 @@ import java.util.List;
 
 public class ConnectionImpl extends Thread implements Connection {
 
-    private PrintWriter out;
-    private BufferedReader in;
+    private final PrintWriter out;
+    private final BufferedReader in;
     private final List<String> messages;
     private boolean ready;
 
@@ -20,7 +22,7 @@ public class ConnectionImpl extends Thread implements Connection {
             this.out = new PrintWriter(socket.getOutputStream(), true);
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SocketException();
         }
         ready = true;
         this.start();
@@ -29,15 +31,15 @@ public class ConnectionImpl extends Thread implements Connection {
     @Override
     public void run() {
         while (ready) {
-            main();
+            listenForMessages();
         }
     }
 
-    private void main() {
+    private void listenForMessages() {
         try {
             messages.add(in.readLine());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SocketException();
         }
     }
 
@@ -60,7 +62,7 @@ public class ConnectionImpl extends Thread implements Connection {
             in.close();
             out.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SocketException();
         }
     }
 }
