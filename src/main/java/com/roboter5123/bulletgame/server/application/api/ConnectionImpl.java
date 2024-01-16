@@ -31,13 +31,18 @@ public class ConnectionImpl extends Thread implements Connection {
     @Override
     public void run() {
         while (ready) {
-            listenForMessages();
+            listenForMessage();
         }
     }
 
-    private void listenForMessages() {
+    private void listenForMessage() {
         try {
-            messages.add(in.readLine());
+            String msg = in.readLine();
+            if (msg != null) {
+                messages.add(msg);
+            } else {
+                closeConnection();
+            }
         } catch (IOException e) {
             throw new SocketException();
         }
@@ -64,5 +69,9 @@ public class ConnectionImpl extends Thread implements Connection {
         } catch (IOException e) {
             throw new SocketException();
         }
+    }
+
+    public boolean isDisconnected() {
+        return !ready;
     }
 }

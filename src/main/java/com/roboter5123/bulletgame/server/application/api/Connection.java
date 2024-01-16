@@ -8,4 +8,6 @@ public interface Connection {
     List<String> readMessages();
 
     void closeConnection();
+
+    boolean isDisconnected();
 }

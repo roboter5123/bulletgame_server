@@ -1,11 +1,11 @@
 package com.roboter5123.bulletgame.server.application.api;
-import com.roboter5123.bulletgame.server.application.Application;
 import com.roboter5123.bulletgame.server.application.exception.SocketException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class ConnectionManagerImpl extends Thread implements ConnectionManager {
@@ -13,7 +13,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
     private List<Connection> connections;
     private ServerSocket serverSocket;
     private boolean ready;
-    private static final Logger log = Logger.getLogger(Application.class.getCanonicalName());
+    private static final Logger log = Logger.getLogger(ConnectionManager.class.getCanonicalName());
 
     public ConnectionManagerImpl(List<Connection> connections) {
         this.connections = connections;
@@ -24,10 +24,35 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
     @Override
     public void run() {
         log.info(() -> "Listening for connections on port: " + serverSocket.getLocalPort());
+        // TODO: Make unused connection detection less like complete shit.
+        new Thread(this::connectionWatchdog).start();
         while (ready) {
             acceptConnection();
         }
         shutdown();
+    }
+
+    private void connectionWatchdog() {
+        try {
+            TimeUnit.SECONDS.sleep(60);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        while (ready) {
+            clearUnusedConnections();
+            try {
+                TimeUnit.SECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void clearUnusedConnections() {
+        int connectionCount = connections.size();
+        log.info(() -> "Starting clearing of unused connections. Connections:[" + connectionCount + "]");
+        connections.removeIf(Connection::isDisconnected);
+        log.info(() -> "Finished clearing unused connections. Removed connection Count:" + (connectionCount - connections.size()));
     }
 
     private void startServerSocket() {
@@ -70,11 +95,6 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         }
     }
 
-    public List<Connection> getConnections() {
-
-        return connections;
-    }
-
     @Override
     public void ready(boolean ready) {
         this.ready = ready;
@@ -83,5 +103,9 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
     public void setConnections(List<Connection> connections) {
 
         this.connections = connections;
+    }
+
+    public List<Connection> getConnections() {
+        return connections;
     }
 }
