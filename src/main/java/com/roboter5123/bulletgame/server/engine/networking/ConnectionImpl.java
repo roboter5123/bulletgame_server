@@ -51,7 +51,7 @@ public class ConnectionImpl extends Thread implements Connection {
             throw new SocketException();
         }
     }
-    
+
     @Override
     public void sendMessage(AbstractGameState gameState) {
         String gameStateJson = this.gson.toJson(gameState);

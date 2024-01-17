@@ -9,11 +9,8 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class Application extends AbstractApplication {
-
-    private static final Logger log = Logger.getLogger(Application.class.getCanonicalName());
     private boolean running;
-    List<String> chatLog = new ArrayList<>();
-    private GameState gameState = new GameState();
+    private GameState gameState;
 
     @Override
     protected void applicationLoop() {
@@ -38,8 +35,8 @@ public class Application extends AbstractApplication {
     }
 
     private void broadcastGameState() {
-        for (Connection receiver : connections) {
-            receiver.sendMessage(this.gameState);
+        if (gameState.getMessages() == null || !gameState.getMessages().isEmpty()){
+            connections.parallelStream().forEach(receiver -> receiver.sendMessage(this.gameState));
         }
     }
 }
