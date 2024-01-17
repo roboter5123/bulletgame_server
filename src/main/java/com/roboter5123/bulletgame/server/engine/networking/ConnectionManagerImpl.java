@@ -90,6 +90,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
             Socket clientSocket = serverSocket.accept();
             log.info(() -> "Client connected. IpAdress: " + clientSocket.getInetAddress());
             Connection connection = new ConnectionImpl(clientSocket);
+            connection.start();
             this.connections.add(connection);
         } catch (IOException e) {
             log.info(() -> "An error happened when a client tried to connect. error: " + e.getMessage());

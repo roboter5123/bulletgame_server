@@ -13,12 +13,10 @@ import java.util.List;
 
 public class ConnectionImpl extends Thread implements Connection {
 
-    private final PrintWriter out;
-    private final BufferedReader in;
-    private final List<Message> messages;
-    private boolean ready;
-    private final Gson gson;
-
+    private PrintWriter out;
+    private BufferedReader in;
+    private List<Message> messages;
+    private Gson gson;
 
     public ConnectionImpl(Socket socket) {
         this.messages = new ArrayList<>();
@@ -29,13 +27,11 @@ public class ConnectionImpl extends Thread implements Connection {
             throw new SocketException();
         }
         gson = new Gson();
-        ready = true;
-        this.start();
     }
 
     @Override
     public void run() {
-        while (ready) {
+        while (!isInterrupted()) {
             listenForMessage();
         }
     }
@@ -49,7 +45,7 @@ public class ConnectionImpl extends Thread implements Connection {
                 closeConnection();
             }
         } catch (IOException e) {
-            throw new SocketException();
+            this.interrupt();
         }
     }
 
@@ -68,16 +64,21 @@ public class ConnectionImpl extends Thread implements Connection {
 
     @Override
     public void closeConnection() {
-        this.ready = false;
+        this.interrupt();
         try {
             in.close();
             out.close();
         } catch (IOException e) {
-            throw new SocketException();
+            log.warning("Error closing socket connection");
+        }finally {
+            in = null;
+            out = null;
         }
+        this.messages = null;
+        this.gson = null;
     }
 
     public boolean isDisconnected() {
-        return !ready;
+        return this.isInterrupted();
     }
 }
