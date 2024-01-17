@@ -1,6 +1,6 @@
 package com.roboter5123.bulletgame.server.application;
-import com.roboter5123.bulletgame.server.application.api.ConnectionManager;
-import com.roboter5123.bulletgame.server.application.api.ConnectionManagerFactory;
+import com.roboter5123.bulletgame.server.engine.networking.ConnectionManager;
+import com.roboter5123.bulletgame.server.engine.networking.ConnectionManagerFactory;
 
 import java.util.logging.Logger;
 
