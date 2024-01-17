@@ -1,5 +1,7 @@
-package com.roboter5123.bulletgame.server.application.api;
-import com.roboter5123.bulletgame.server.application.exception.SocketException;
+package com.roboter5123.bulletgame.server.engine.networking;
+
+import com.roboter5123.bulletgame.server.engine.AbstractGameState;
+import com.roboter5123.bulletgame.server.engine.exception.SocketException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,10 +13,10 @@ import java.util.List;
 
 public class ConnectionImpl extends Thread implements Connection {
 
-    private final PrintWriter out;
-    private final BufferedReader in;
-    private final List<String> messages;
-    private boolean ready;
+    private PrintWriter out;
+    private BufferedReader in;
+    private List<Message> messages;
+    private Gson gson;
 
     public ConnectionImpl(Socket socket) {
         this.messages = new ArrayList<>();
@@ -24,13 +26,12 @@ public class ConnectionImpl extends Thread implements Connection {
         } catch (IOException e) {
             throw new SocketException();
         }
-        ready = true;
-        this.start();
+        gson = new Gson();
     }
 
     @Override
     public void run() {
-        while (ready) {
+        while (!isInterrupted()) {
             listenForMessage();
         }
     }
@@ -39,39 +40,45 @@ public class ConnectionImpl extends Thread implements Connection {
         try {
             String msg = in.readLine();
             if (msg != null) {
-                messages.add(msg);
+                messages.add(gson.fromJson(msg, Message.class));
             } else {
                 closeConnection();
             }
         } catch (IOException e) {
-            throw new SocketException();
+            this.interrupt();
         }
     }
 
     @Override
-    public void sendMessage(String message) {
-        out.println(message);
+    public void sendMessage(AbstractGameState gameState) {
+        String gameStateJson = this.gson.toJson(gameState);
+        out.println(gameStateJson);
     }
 
     @Override
-    public List<String> readMessages() {
-        List<String> messagesCopy = new ArrayList<>(this.messages);
+    public List<Message> readMessages() {
+        List<Message> messagesCopy = new ArrayList<>(this.messages);
         messagesCopy.clear();
         return messagesCopy;
     }
 
     @Override
     public void closeConnection() {
-        this.ready = false;
+        this.interrupt();
         try {
             in.close();
             out.close();
         } catch (IOException e) {
-            throw new SocketException();
+            log.warning("Error closing socket connection");
+        }finally {
+            in = null;
+            out = null;
         }
+        this.messages = null;
+        this.gson = null;
     }
 
     public boolean isDisconnected() {
-        return !ready;
+        return this.isInterrupted();
     }
 }

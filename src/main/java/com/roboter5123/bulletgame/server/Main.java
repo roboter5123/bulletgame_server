@@ -1,5 +1,4 @@
 package com.roboter5123.bulletgame.server;
-import com.roboter5123.bulletgame.server.application.Application;
 
 import java.util.logging.Logger;
 

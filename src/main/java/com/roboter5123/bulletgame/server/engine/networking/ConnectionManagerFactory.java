@@ -1,4 +1,4 @@
-package com.roboter5123.bulletgame.server.application.api;
+package com.roboter5123.bulletgame.server.engine.networking;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -6,8 +6,7 @@ public class ConnectionManagerFactory {
 
     private static ConnectionManager connectionManager;
 
-    private ConnectionManagerFactory() {
-    }
+    private ConnectionManagerFactory() {}
 
     public static ConnectionManager getConnectionManager(List<Connection> connections) {
         if (connectionManager == null) {

@@ -1,5 +1,6 @@
-package com.roboter5123.bulletgame.server.application.api;
-import com.roboter5123.bulletgame.server.application.exception.SocketException;
+package com.roboter5123.bulletgame.server.engine.networking;
+
+import com.roboter5123.bulletgame.server.engine.exception.SocketException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -12,13 +13,11 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
 
     private List<Connection> connections;
     private ServerSocket serverSocket;
-    private boolean ready;
     private static final Logger log = Logger.getLogger(ConnectionManager.class.getCanonicalName());
 
     public ConnectionManagerImpl(List<Connection> connections) {
         this.connections = connections;
         startServerSocket();
-        this.ready = true;
     }
 
     @Override
@@ -26,7 +25,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         log.info(() -> "Listening for connections on port: " + serverSocket.getLocalPort());
         // TODO: Make unused connection detection less like complete shit.
         new Thread(this::connectionWatchdog).start();
-        while (ready) {
+        while (!this.isInterrupted()) {
             acceptConnection();
         }
         shutdown();
@@ -36,14 +35,14 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         try {
             TimeUnit.SECONDS.sleep(60);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            shutdown();
         }
-        while (ready) {
+        while (!this.isInterrupted()) {
             clearUnusedConnections();
             try {
                 TimeUnit.SECONDS.sleep(10);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                shutdown();
             }
         }
     }
@@ -60,11 +59,11 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         log.info(() -> "Attempting to start Serversocket on port: " + port);
         try {
             this.serverSocket = new ServerSocket(port);
+            log.info(() -> "Successfully started Serversocket on port: " + port);
         } catch (IOException e) {
             log.severe("Starting Serversocket on port: " + port + " failed");
-            throw new SocketException();
+            this.interrupt();
         }
-        log.info(() -> "Successfully started Serversocket on port: " + port);
     }
 
     private void shutdown() {
@@ -72,13 +71,16 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         for (Connection connection : connections) {
             connection.closeConnection();
         }
+        connections.clear();
+        connections = null;
         log.info("Disconnected all clients");
         log.info("Shutting down server-socket");
         try {
             serverSocket.close();
         } catch (IOException e) {
             log.severe("An error occurred while shutting down down server-socket");
-            throw new SocketException();
+        } finally {
+            serverSocket = null;
         }
         log.info("Serversocket shutdown");
     }
@@ -88,21 +90,12 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
             Socket clientSocket = serverSocket.accept();
             log.info(() -> "Client connected. IpAdress: " + clientSocket.getInetAddress());
             Connection connection = new ConnectionImpl(clientSocket);
+            connection.start();
             this.connections.add(connection);
         } catch (IOException e) {
             log.info(() -> "An error happened when a client tried to connect. error: " + e.getMessage());
             throw new SocketException();
         }
-    }
-
-    @Override
-    public void ready(boolean ready) {
-        this.ready = ready;
-    }
-
-    public void setConnections(List<Connection> connections) {
-
-        this.connections = connections;
     }
 
     public List<Connection> getConnections() {
