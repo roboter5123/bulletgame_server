@@ -1,4 +1,5 @@
 package com.roboter5123.bulletgame.server.engine.networking;
+
 import com.roboter5123.bulletgame.server.engine.exception.SocketException;
 
 import java.io.IOException;
@@ -58,11 +59,11 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         log.info(() -> "Attempting to start Serversocket on port: " + port);
         try {
             this.serverSocket = new ServerSocket(port);
+            log.info(() -> "Successfully started Serversocket on port: " + port);
         } catch (IOException e) {
             log.severe("Starting Serversocket on port: " + port + " failed");
             this.interrupt();
         }
-        log.info(() -> "Successfully started Serversocket on port: " + port);
     }
 
     private void shutdown() {
@@ -78,7 +79,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
             serverSocket.close();
         } catch (IOException e) {
             log.severe("An error occurred while shutting down down server-socket");
-        }finally {
+        } finally {
             serverSocket = null;
         }
         log.info("Serversocket shutdown");
@@ -95,6 +96,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
             throw new SocketException();
         }
     }
+
     public List<Connection> getConnections() {
         return connections;
     }

@@ -15,7 +15,8 @@ public abstract class AbstractApplication extends Thread {
     @Override
     public void run() {
         initialize();
-        gameLoop();
+        applicationLoop();
+        shutdown();
     }
 
     private void initialize() {
@@ -26,6 +27,14 @@ public abstract class AbstractApplication extends Thread {
         log.info("Finished initializing Application");
     }
 
-    abstract protected void gameLoop();
+    protected void shutdown() {
+        log.info("Shuting down Application");
+        this.connectionManager.interrupt();
+        this.connectionManager = null;
+        this.connections = null;
+        log.info("Finished Shutting Down Application");
+    }
+
+    abstract protected void applicationLoop();
 
 }

@@ -4,4 +4,5 @@ import java.util.List;
 public interface ConnectionManager {
     List<Connection> getConnections();
     void start();
+    void interrupt();
 }
