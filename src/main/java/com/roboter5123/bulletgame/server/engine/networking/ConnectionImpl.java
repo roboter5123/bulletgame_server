@@ -1,4 +1,5 @@
 package com.roboter5123.bulletgame.server.engine.networking;
+
 import com.roboter5123.bulletgame.server.engine.AbstractGameState;
 import com.roboter5123.bulletgame.server.engine.exception.SocketException;
 
@@ -14,9 +15,9 @@ public class ConnectionImpl extends Thread implements Connection {
 
     private final PrintWriter out;
     private final BufferedReader in;
-    private final List<String> messages;
+    private final List<Message> messages;
     private boolean ready;
-    private Gson gson;
+    private final Gson gson;
 
 
     public ConnectionImpl(Socket socket) {
@@ -43,7 +44,7 @@ public class ConnectionImpl extends Thread implements Connection {
         try {
             String msg = in.readLine();
             if (msg != null) {
-                messages.add(msg);
+                messages.add(gson.fromJson(msg, Message.class));
             } else {
                 closeConnection();
             }
@@ -59,8 +60,8 @@ public class ConnectionImpl extends Thread implements Connection {
     }
 
     @Override
-    public List<String> readMessages() {
-        List<String> messagesCopy = new ArrayList<>(this.messages);
+    public List<Message> readMessages() {
+        List<Message> messagesCopy = new ArrayList<>(this.messages);
         messagesCopy.clear();
         return messagesCopy;
     }

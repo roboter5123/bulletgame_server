@@ -6,7 +6,7 @@ import java.util.List;
 public interface Connection {
     void sendMessage(AbstractGameState gameState);
 
-    List<String> readMessages();
+    public List<Message> readMessages();
 
     void closeConnection();
 
