@@ -12,13 +12,11 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
 
     private List<Connection> connections;
     private ServerSocket serverSocket;
-    private boolean ready;
     private static final Logger log = Logger.getLogger(ConnectionManager.class.getCanonicalName());
 
     public ConnectionManagerImpl(List<Connection> connections) {
         this.connections = connections;
         startServerSocket();
-        this.ready = true;
     }
 
     @Override
@@ -26,7 +24,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         log.info(() -> "Listening for connections on port: " + serverSocket.getLocalPort());
         // TODO: Make unused connection detection less like complete shit.
         new Thread(this::connectionWatchdog).start();
-        while (ready) {
+        while (!this.isInterrupted()) {
             acceptConnection();
         }
         shutdown();
@@ -36,14 +34,14 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         try {
             TimeUnit.SECONDS.sleep(60);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            shutdown();
         }
-        while (ready) {
+        while (!this.isInterrupted()) {
             clearUnusedConnections();
             try {
                 TimeUnit.SECONDS.sleep(10);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                shutdown();
             }
         }
     }
@@ -62,7 +60,7 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
             this.serverSocket = new ServerSocket(port);
         } catch (IOException e) {
             log.severe("Starting Serversocket on port: " + port + " failed");
-            throw new SocketException();
+            this.interrupt();
         }
         log.info(() -> "Successfully started Serversocket on port: " + port);
     }
@@ -72,13 +70,16 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
         for (Connection connection : connections) {
             connection.closeConnection();
         }
+        connections.clear();
+        connections = null;
         log.info("Disconnected all clients");
         log.info("Shutting down server-socket");
         try {
             serverSocket.close();
         } catch (IOException e) {
             log.severe("An error occurred while shutting down down server-socket");
-            throw new SocketException();
+        }finally {
+            serverSocket = null;
         }
         log.info("Serversocket shutdown");
     }
@@ -94,17 +95,6 @@ public class ConnectionManagerImpl extends Thread implements ConnectionManager {
             throw new SocketException();
         }
     }
-
-    @Override
-    public void ready(boolean ready) {
-        this.ready = ready;
-    }
-
-    public void setConnections(List<Connection> connections) {
-
-        this.connections = connections;
-    }
-
     public List<Connection> getConnections() {
         return connections;
     }
